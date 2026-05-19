@@ -38,7 +38,16 @@ public class PizarraModelo {
         observado.firePropertyChange("CAMBIO", null, this);
     }
 
+
     public void limpiarPantalla() {
+        figuras.limpiar();
+        if (protocoloActivo != null) {
+            protocoloActivo.enviarLimpiar();
+        }
+        observado.firePropertyChange("CAMBIO", null, this);
+    }
+
+    public void limpiarPantallaLocal() {
         figuras.limpiar();
         observado.firePropertyChange("CAMBIO", null, this);
     }

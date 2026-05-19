@@ -17,14 +17,36 @@ public abstract class Figura {
     public abstract String aProtocolo();
 
     public static Figura parsear(String linea, Color color) {
-        String[] p = linea.split(" ");
-        return switch (p[0]) {
-            case "CUADRADO" -> new Cuadrado(int_(p[1]), int_(p[2]), int_(p[3]), int_(p[4]), color);
-            case "CIRCULO"  -> new Circulo (int_(p[1]), int_(p[2]), int_(p[3]), color);
-            case "LINEA"    -> new Linea   (int_(p[1]), int_(p[2]), int_(p[3]), int_(p[4]), color);
-            default         -> null;
-        };
-    }
 
-    private static int int_(String s) { return Integer.parseInt(s); }
+        if (linea.matches("^CUADRADO\\s+\\d+\\s+\\d+\\s+\\d+\\s+\\d+$")) {
+            String[] p = linea.split("\\s+");
+            return new Cuadrado(
+                    Integer.parseInt(p[1]),
+                    Integer.parseInt(p[2]),
+                    Integer.parseInt(p[3]),
+                    Integer.parseInt(p[4]),
+                    color);
+        }
+
+        if (linea.matches("^CIRCULO\\s+\\d+\\s+\\d+\\s+\\d+$")) {
+            String[] p = linea.split("\\s+");
+            return new Circulo(
+                    Integer.parseInt(p[1]),
+                    Integer.parseInt(p[2]),
+                    Integer.parseInt(p[3]),
+                    color);
+        }
+
+        if (linea.matches("^LINEA\\s+\\d+\\s+\\d+\\s+\\d+\\s+\\d+$")) {
+            String[] p = linea.split("\\s+");
+            return new Linea(
+                    Integer.parseInt(p[1]),
+                    Integer.parseInt(p[2]),
+                    Integer.parseInt(p[3]),
+                    Integer.parseInt(p[4]),
+                    color);
+        }
+
+        return null;
+    }
 }

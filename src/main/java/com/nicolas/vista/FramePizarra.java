@@ -12,7 +12,6 @@ import java.net.Socket;
 public class FramePizarra extends JFrame {
 
     private static final Logger logger = LogManager.getRootLogger();
-
     private PizarraModelo modelo;
 
     public FramePizarra() {
@@ -28,7 +27,7 @@ public class FramePizarra extends JFrame {
 
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(panel,               BorderLayout.CENTER);
-        getContentPane().add(crearToolbar(panel),  BorderLayout.EAST);
+        getContentPane().add(crearToolbar(panel), BorderLayout.EAST);
 
         pack();
         setLocationRelativeTo(null);
@@ -38,18 +37,15 @@ public class FramePizarra extends JFrame {
     private JPanel crearToolbar(PanelPizarra panel) {
         JPanel toolbar = new JPanel();
         toolbar.setLayout(new BoxLayout(toolbar, BoxLayout.Y_AXIS));
-        toolbar.setBorder(BorderFactory.createEtchedBorder());
-        toolbar.setPreferredSize(new Dimension(70, 0));
+        toolbar.setPreferredSize(new Dimension(90, 0));
 
-        JToggleButton btnCuadrado = boton("□", "CUADRADO", panel);
-        JToggleButton btnCirculo  = boton("○", "CIRCULO",  panel);
-        JToggleButton btnLinea    = boton("/", "LINEA",    panel);
+        JButton btnCuadrado = new JButton("Cuadrado");
+        JButton btnCirculo  = new JButton("Circulo");
+        JButton btnLinea    = new JButton("Linea");
 
-        ButtonGroup grupo = new ButtonGroup();
-        grupo.add(btnCuadrado);
-        grupo.add(btnCirculo);
-        grupo.add(btnLinea);
-        btnCuadrado.setSelected(true);
+        btnCuadrado.addActionListener(e -> panel.setTipoFigura("CUADRADO"));
+        btnCirculo .addActionListener(e -> panel.setTipoFigura("CIRCULO"));
+        btnLinea   .addActionListener(e -> panel.setTipoFigura("LINEA"));
 
         toolbar.add(Box.createVerticalStrut(10));
         toolbar.add(btnCuadrado);
@@ -59,21 +55,7 @@ public class FramePizarra extends JFrame {
         toolbar.add(btnLinea);
         toolbar.add(Box.createVerticalGlue());
 
-        JLabel lbl = new JLabel("Toolbar", SwingConstants.CENTER);
-        lbl.setAlignmentX(CENTER_ALIGNMENT);
-        toolbar.add(lbl);
-        toolbar.add(Box.createVerticalStrut(5));
-
         return toolbar;
-    }
-
-    private JToggleButton boton(String texto, String tipo, PanelPizarra panel) {
-        JToggleButton btn = new JToggleButton(texto);
-        btn.setAlignmentX(CENTER_ALIGNMENT);
-        btn.setMaximumSize(new Dimension(55, 55));
-        btn.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        btn.addActionListener(e -> panel.setTipoFigura(tipo));
-        return btn;
     }
 
     private JMenuBar crearMenu() {
@@ -87,8 +69,8 @@ public class FramePizarra extends JFrame {
 
         itemServidor.addActionListener(e -> comenzarServidor());
         itemConectar.addActionListener(e -> conectar());
-        itemLimpiar.addActionListener(e  -> modelo.limpiarPantalla());
-        itemSalir.addActionListener(e    -> System.exit(0));
+        itemLimpiar .addActionListener(e -> modelo.limpiarPantalla());
+        itemSalir   .addActionListener(e -> System.exit(0));
 
         menuArchivo.add(itemServidor);
         menuArchivo.add(itemConectar);
@@ -105,8 +87,8 @@ public class FramePizarra extends JFrame {
         modelo.notificarEsperando();
         new Thread(() -> {
             try {
-                ServerSocket srv = new ServerSocket(ProtocoloPizarra.PUERTO);
-                logger.info("Servidor escuchando en puerto " + ProtocoloPizarra.PUERTO);
+                ServerSocket srv = new ServerSocket(ConfigPizarra.PUERTO);
+                logger.info("Servidor escuchando en puerto " + ConfigPizarra.PUERTO);
                 Socket clt = srv.accept();
                 logger.info("Cliente conectado");
                 ProtocoloPizarra protocolo = ProtocoloPizarra.crearParaServidor(clt, modelo);

@@ -7,7 +7,6 @@ import java.net.*;
 public class ProtocoloPizarra implements Runnable {
 
     private static final Logger logger = LogManager.getRootLogger();
-    public  static final int    PUERTO = 5000;
 
     private final Socket         socket;
     private final PrintWriter    salida;
@@ -30,7 +29,7 @@ public class ProtocoloPizarra implements Runnable {
 
     public static ProtocoloPizarra crearParaCliente(String host, PizarraModelo modelo)
             throws IOException {
-        Socket socket = new Socket(InetAddress.getByName(host), PUERTO);
+        Socket socket = new Socket(InetAddress.getByName(host), ConfigPizarra.PUERTO);
         return new ProtocoloPizarra(socket, modelo);
     }
 
@@ -38,17 +37,17 @@ public class ProtocoloPizarra implements Runnable {
     public void run() {
         try {
             String msg = leer();
-            if ("HOLA".equals(msg)) enviar("OK");
+            if (ConfigPizarra.CMD_HOLA.equals(msg)) enviar(ConfigPizarra.CMD_OK);
 
             msg = leer();
-            if ("LISTA".equals(msg)) {
-                enviarLista();
-                leer();
+            if (msg.matches(ConfigPizarra.REGEX_LISTA)) {
+                int cantidad = Integer.parseInt(msg.split("\\s+")[1]);
+                recibirFiguras(cantidad);
+                enviar(ConfigPizarra.CMD_OK);
             }
 
-            enviar("LISTA");
-            recibirLista();
-            enviar("OK");
+            enviarLista();
+            leer();
 
             modelo.setProtocoloActivo(this);
             modelo.notificarConectado();
@@ -56,7 +55,7 @@ public class ProtocoloPizarra implements Runnable {
             leerMensajes();
 
         } catch (IOException e) {
-            logger.error("Error protocolo servidor: " + e.getMessage());
+            logger.error("Error servidor: " + e.getMessage());
         } finally {
             cerrarConexion();
         }
@@ -64,16 +63,18 @@ public class ProtocoloPizarra implements Runnable {
 
     public void ejecutarComoCliente() throws IOException {
         try {
-            enviar("HOLA");
+            enviar(ConfigPizarra.CMD_HOLA);
             leer();
 
-            enviar("LISTA");
-            recibirLista();
-            enviar("OK");
-
-            leer();
             enviarLista();
             leer();
+
+            String msg = leer();
+            if (msg.matches(ConfigPizarra.REGEX_LISTA)) {
+                int cantidad = Integer.parseInt(msg.split("\\s+")[1]);
+                recibirFiguras(cantidad);
+                enviar(ConfigPizarra.CMD_OK);
+            }
 
             modelo.setProtocoloActivo(this);
             modelo.notificarConectado();
@@ -90,14 +91,18 @@ public class ProtocoloPizarra implements Runnable {
             String msg = leer();
             if (msg == null) break;
 
-            if ("FIGURA".equals(msg)) {
-                enviar("OK");
-                Figura figura = Figura.parsear(leer(), PizarraModelo.COLOR);
+            if (msg.matches(ConfigPizarra.REGEX_FIGURA)) {
+                String datos  = msg.substring("FIGURA ".length());
+                Figura figura = Figura.parsear(datos, PizarraModelo.COLOR);
                 modelo.agregarFiguraRemota(figura);
-                enviar("OK");
+                enviar(ConfigPizarra.CMD_OK);
 
-            } else if ("CHAU".equals(msg)) {
-                enviar("OK");
+            } else if (ConfigPizarra.CMD_LIMPIAR.equals(msg)) {
+                modelo.limpiarPantallaLocal();
+                enviar(ConfigPizarra.CMD_OK);
+
+            } else if (ConfigPizarra.CMD_CHAU.equals(msg)) {
+                enviar(ConfigPizarra.CMD_OK);
                 modelo.notificarDesconectado();
                 break;
             }
@@ -105,26 +110,36 @@ public class ProtocoloPizarra implements Runnable {
     }
 
     private void enviarLista() {
-        enviar(String.valueOf(modelo.getFiguras().tamano()));
+        enviar(ConfigPizarra.CMD_LISTA + " " + modelo.getFiguras().tamano());
         for (Figura f : modelo.getFiguras()) {
-            enviar(f.aProtocolo());
+            enviar("FIGURA " + f.aProtocolo());
         }
     }
 
-    private void recibirLista() throws IOException {
-        int count = Integer.parseInt(leer());
-        for (int i = 0; i < count; i++) {
-            Figura figura = Figura.parsear(leer(), PizarraModelo.COLOR);
-            modelo.agregarFiguraRemota(figura);
+    private void recibirFiguras(int cantidad) throws IOException {
+        for (int i = 0; i < cantidad; i++) {
+            String msg = leer();
+            if (msg.matches(ConfigPizarra.REGEX_FIGURA)) {
+                String datos  = msg.substring("FIGURA ".length());
+                Figura figura = Figura.parsear(datos, PizarraModelo.COLOR);
+                modelo.agregarFiguraRemota(figura);
+            } else {
+                logger.warn("Figura invalida recibida: " + msg);
+            }
         }
     }
 
     public synchronized void enviarFigura(Figura figura) {
-        enviar("FIGURA");
-        enviar(figura.aProtocolo());
+        enviar("FIGURA " + figura.aProtocolo());
     }
 
-    public void enviarChau() { enviar("CHAU"); }
+    public synchronized void enviarLimpiar() {
+        enviar(ConfigPizarra.CMD_LIMPIAR);
+    }
+
+    public void enviarChau() {
+        enviar(ConfigPizarra.CMD_CHAU);
+    }
 
     private String leer() throws IOException {
         String msg = entrada.readLine();
