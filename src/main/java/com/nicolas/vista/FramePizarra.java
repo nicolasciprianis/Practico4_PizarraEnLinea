@@ -110,6 +110,7 @@ public class FramePizarra extends JFrame {
                 protocolo.ejecutarComoCliente();
             } catch (IOException e) {
                 logger.error("Error cliente: " + e.getMessage());
+
             }
         }).start();
     }
